@@ -13,7 +13,6 @@ class training_process():
     def __init__(self):
         
         gpu_data = np.loadtxt('../data/data.csv', delimiter=',', dtype=str)
-        print(gpu_data)
 
         #Breaking data apart out of the csv
         raw_priceData = gpu_data[:, 2].astype(float).reshape(-1,1)
@@ -54,30 +53,26 @@ class training_process():
             if (epoch +1) % 50 == 0:
                 print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
         
+        predicted_year = 2023
+        graphics_card = "GeForce RTX 3070"
         #prediction stage
-        test_year = scaler.transform(np.array([[2029]]))
-        test_gpu = gpu_encoder.transform(["GeForce RTX 4070"]).reshape(-1, 1)
+        test_year = scaler.transform(np.array([[predicted_year]]))
+        place_holder = scaler.transform(np.array([[1]]))
+        test_gpu = gpu_encoder.transform([graphics_card]).reshape(-1, 1)
         test_price = scaler.transform([[499]]).astype(float).reshape(-1,1) #last known
         test_usedPrice = scaler.transform([[300]]).astype(float).reshape(-1,1)
-        test_input = np.hstack((test_year, test_gpu, test_price, test_usedPrice))
-        test_tensor = torch.tensor(test_input, dtype=torch.float32).unsqueeze(0)
-        
+        test_retailInput = np.hstack((test_year, test_gpu, test_price, place_holder))
+        test_usedInput = np.hstack((test_year, test_gpu, test_usedPrice, place_holder))
+        test_retailTensor = torch.tensor(test_retailInput, dtype=torch.float32).unsqueeze(0)
+        test_usedTensor = torch.tensor(test_usedInput, dtype=torch.float32).unsqueeze(0)
         model.eval()
         with torch.no_grad():
-            pred_scaled = model(test_tensor).item()
-            pred_price = scaler.inverse_transform([[pred_scaled]])[0][0]
-            print(f"Predicted price for the 2026 RTX 4070: ${pred_price:.2f}")
-        
-
-            
-            
-        
-        
-
-        
-        
-        
-                         
+            pred_scaled = model(test_retailTensor).item()
+            pred_usedScaled = model(test_usedTensor).item()
+            pred_retailPrice = scaler.inverse_transform([[pred_scaled]])[0][0]
+            pred_usedPrice = scaler.inverse_transform([[pred_usedScaled]])[0][0]
+            print(f"Predicted retail price for the {predicted_year} RTX 4070: ${pred_retailPrice:.2f}")
+            print(f"Predicted used price for the {predicted_year} RTX 4070: ${pred_usedPrice:.2f}")
         
 
 training_process()
