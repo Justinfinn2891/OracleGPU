@@ -1,4 +1,46 @@
+import tkinter as tk
+class GPUInputApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("GPU Price Predictor")
+        root.configure(bg = "gray12")
+        tk.Label(root, text="Graphics Card Name:", fg = "white", bg = "gray12", font=("Arial", 24)).pack(pady=(25, 0))
+        self.gpu_entry = tk.Entry(root, width=100, fg = "black", bg = "white")
+        self.gpu_entry.pack(pady=(0, 100))
 
+        tk.Label(root, text="Year to Predict:", fg = "white", bg = "gray12", font=("Arial", 24)).pack()
+        self.year_entry = tk.Entry(root, width=100)
+        self.year_entry.pack(pady=(0, 100))
+
+        self.result_label = tk.Label(root, text="", fg="green")
+        self.result_label.pack(pady=100)
+
+        tk.Button(root, text="Submit", command=self.submit).pack()
+
+    def submit(self):
+        self.gpu = self.gpu_entry.get().strip()
+        self.year = self.year_entry.get().strip()
+
+        if not self.gpu or not self.year.isdigit():
+            self.result_label.config(text="Please enter valid inputs.")
+        else:
+            self.result_label.config(text=f"GPU: {self.gpu}, Year: {self.year}")
+            print(f"User selected GPU: {self.gpu}, Year: {self.year}")
+            self.prediction()
+    def prediction(self):
+        from training import training_process
+        pred_data = training_process(self.gpu, self.year)
+        print(pred_data.usedPrice)
+        print(pred_data.retailPrice)
+        self.result_label.config(text=f"Used: {pred_data.usedPrice}, Retail: {pred_data.retailPrice}")
+        
+
+if __name__ == "__main__":
+    screen = tk.Tk()
+    app = GPUInputApp(screen)
+    screen.geometry("1920x1080")
+    screen.mainloop()
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -56,4 +98,4 @@ plt.show()
 #ypoints = np.array([0,250])
 
 ##plt.plot(exampleY, exampleX, 'o-g') # plot the points
-#plt.show() #Pull this window and attach it to tkinter window 
+#plt.show() #Pull this window and attach it to tkinter window """
