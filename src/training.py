@@ -45,7 +45,7 @@ class training_process:
         loss_fn = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=0.01)
 
-        for i in range(300):
+        for i in range(1):
             self.model.train()
             output = self.model(X_tensor)
             loss = loss_fn(output, Y_tensor)

@@ -1,46 +1,102 @@
 import tkinter as tk
+from tkinter import font
+
 class GPUInputApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("GPU Price Predictor")
-        root.configure(bg = "gray12")
-        tk.Label(root, text="Graphics Card Name:", fg = "white", bg = "gray12", font=("Arial", 24)).pack(pady=(25, 0))
-        self.gpu_entry = tk.Entry(root, width=100, fg = "black", bg = "white")
-        self.gpu_entry.pack(pady=(0, 100))
+        self.root.title("OracleGPU - Price Predictor")
+        self.root.configure(bg="gray12")
+        self.root.geometry("1920x1080")
 
-        tk.Label(root, text="Year to Predict:", fg = "white", bg = "gray12", font=("Arial", 24)).pack()
-        self.year_entry = tk.Entry(root, width=100)
-        self.year_entry.pack(pady=(0, 100))
+        # Custom font setup
+        self.title_font = font.Font(family="Helvetica", size=48, weight="bold")
+        self.label_font = font.Font(family="Helvetica", size=24)
+        self.entry_font = font.Font(family="Helvetica", size=16)
 
-        self.result_label = tk.Label(root, text="", fg="green")
-        self.result_label.pack(pady=100)
+        # OracleGPU title
+        tk.Label(
+            root,
+            text="OracleGPU",
+            fg="cyan",
+            bg="gray12",
+            font=self.title_font
+        ).pack(pady=(40, 60))
 
-        tk.Button(root, text="Submit", command=self.submit).pack()
+        # GPU name input
+        tk.Label(
+            root,
+            text="Graphics Card Name:",
+            fg="white",
+            bg="gray12",
+            font=self.label_font
+        ).pack(pady=(0, 10))
+
+        self.gpu_entry = tk.Entry(root, width=50, font=self.entry_font)
+        self.gpu_entry.pack(pady=(0, 40))
+
+        # Year input
+        tk.Label(
+            root,
+            text="Year to Predict:",
+            fg="white",
+            bg="gray12",
+            font=self.label_font
+        ).pack(pady=(0, 10))
+
+        self.year_entry = tk.Entry(root, width=50, font=self.entry_font)
+        self.year_entry.pack(pady=(0, 40))
+
+        # Submit Button
+        tk.Button(
+            root,
+            text="Predict Price",
+            command=self.submit,
+            font=self.label_font,
+            bg="black",
+            fg="white",
+            activebackground="gray25",
+            activeforeground="cyan",
+            padx=20,
+            pady=10
+        ).pack(pady=(10, 40))
+
+        # Result Label
+        self.result_label = tk.Label(
+            root,
+            text="",
+            fg="lime",
+            bg="gray12",
+            font=self.label_font
+        )
+        self.result_label.pack(pady=(20, 10))
 
     def submit(self):
         self.gpu = self.gpu_entry.get().strip()
         self.year = self.year_entry.get().strip()
 
         if not self.gpu or not self.year.isdigit():
-            self.result_label.config(text="Please enter valid inputs.")
+            self.result_label.config(text="⚠️ Please enter a valid GPU name and numeric year.")
         else:
-            self.result_label.config(text=f"GPU: {self.gpu}, Year: {self.year}")
+            self.result_label.config(text=f"⏳ Predicting price for {self.gpu} in {self.year}...")
             print(f"User selected GPU: {self.gpu}, Year: {self.year}")
             self.prediction()
+
     def prediction(self):
-        from training import training_process
-        pred_data = training_process(self.gpu, self.year)
-        print(pred_data.usedPrice)
-        print(pred_data.retailPrice)
-        self.result_label.config(text=f"Used: {pred_data.usedPrice}, Retail: {pred_data.retailPrice}")
-        
+        try:
+            from training import training_process  # Ensure your training module is correctly placed
+            pred_data = training_process(self.gpu, self.year)
+            self.result_label.config(
+                text=f"📈 Used: ${pred_data.usedPrice:.2f} | Retail: ${pred_data.retailPrice:.2f}"
+            )
+        except Exception as e:
+            print(f"Prediction error: {e}")
+            self.result_label.config(text="❌ Prediction failed. Please try again later.")
 
 if __name__ == "__main__":
-    screen = tk.Tk()
-    app = GPUInputApp(screen)
-    screen.geometry("1920x1080")
-    screen.mainloop()
-"""
+    root = tk.Tk()
+    app = GPUInputApp(root)
+    root.mainloop()
+
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
