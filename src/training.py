@@ -7,12 +7,12 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from models.gpu_model import modelForPredictions as ourPredictionModel
 
 class training_process:
-    def __init__(self, gpu_name, gpu_year, data_path='../data/gtx_7800_prices (2).csv', sequence_length=30):
+    def __init__(self, gpu_name, gpu_year, data_path='../data/gtx_7800_prices.csv', sequence_length=30):
         self.sequence_length = sequence_length
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.loss_history = []
 
         gpu_data = np.loadtxt(data_path, delimiter=',', dtype=str)
-
         raw_priceData = gpu_data[:, 2].astype(float).reshape(-1, 1)
         raw_usedPriceData = gpu_data[:, 3].astype(float).reshape(-1, 1)
         raw_gpuData = gpu_data[:, 1]
@@ -26,18 +26,13 @@ class training_process:
         used_scaler = MinMaxScaler()
 
         years_scaled = year_scaler.fit_transform(year_ofPurchase)
-        # Optional: log-transform prices for better modeling exponential decay
-        # prices_scaled = retail_scaler.fit_transform(np.log(raw_priceData))
-        # usedPrices_scaled = used_scaler.fit_transform(np.log(raw_usedPriceData))
-
         prices_scaled = retail_scaler.fit_transform(raw_priceData)
         usedPrices_scaled = used_scaler.fit_transform(raw_usedPriceData)
 
         X = np.hstack((years_scaled, prices_scaled, usedPrices_scaled, gpu_ids))
-        y = np.hstack((prices_scaled, usedPrices_scaled))  # Predict both retail and used prices
+        y = np.hstack((prices_scaled, usedPrices_scaled))
 
         X_seq, y_seq = self.create_sequences(X, y)
-
         X_tensor = torch.tensor(X_seq, dtype=torch.float32).to(self.device)
         Y_tensor = torch.tensor(y_seq, dtype=torch.float32).to(self.device)
 
@@ -45,15 +40,14 @@ class training_process:
         loss_fn = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=0.01)
 
-        for i in range(1):
+        for i in range(50):
             self.model.train()
             output = self.model(X_tensor)
             loss = loss_fn(output, Y_tensor)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if (i + 1) % 50 == 0:
-                print(f"Epoch {i+1}, Loss: {loss.item():.4f}")
+            self.loss_history.append(loss.item())
 
         self.predict(gpu_name, gpu_year, gpu_encoder, year_scaler, retail_scaler, used_scaler, X_seq)
 
@@ -67,32 +61,20 @@ class training_process:
     def predict(self, gpu_name, year, gpu_encoder, year_scaler, retail_scaler, used_scaler, X_seq):
         self.model.eval()
         with torch.no_grad():
-            year = int(year)  # Make sure year is int for scaling
-
-            # Get GPU encoding
+            year = int(year)
             gpu_encoded = gpu_encoder.transform([gpu_name])[0]
-
-            # Scale the year for prediction
             scaled_year = year_scaler.transform(np.array([[year]]))[0][0]
 
-            # Use last sequence from training data as base, remove last row, add new year info
-            last_seq = X_seq[-1].copy()  # shape (sequence_length, 4)
-            # Remove last row and append new input with scaled year and gpu_encoded
-            # For retail and used price columns, use placeholder or last known prices (e.g. last_seq[-1,1], last_seq[-1,2])
+            last_seq = X_seq[-1].copy()
             placeholder_retail = last_seq[-1, 1]
             placeholder_used = last_seq[-1, 2]
             new_input = np.array([scaled_year, placeholder_retail, placeholder_used, gpu_encoded])
             new_seq = np.vstack((last_seq[1:], new_input))
 
             test_tensor = torch.tensor(new_seq, dtype=torch.float32).unsqueeze(0).to(self.device)
+            predicted = self.model(test_tensor).squeeze().cpu().numpy()
 
-            pred_scaled = self.model(test_tensor).cpu().numpy()[0]
-
-            self.retailPrice = retail_scaler.inverse_transform([[pred_scaled[0]]])[0][0]
-            self.usedPrice = used_scaler.inverse_transform([[pred_scaled[1]]])[0][0]
-
-            print(f"Predicted retail price for the {year} {gpu_name}: ${self.retailPrice:.2f}")
-            print(f"Predicted used price for the {year} {gpu_name}: ${self.usedPrice:.2f}")
-
-    def get_prediction(self):
-        return self.retailPrice, self.usedPrice
+            # Save for UI
+            self.retailPrice = float(retail_scaler.inverse_transform([[predicted[0], 0]])[0][0])
+            self.usedPrice = float(used_scaler.inverse_transform([[0, predicted[1]]])[0][1])
+     
