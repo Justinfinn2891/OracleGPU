@@ -21,7 +21,7 @@ As GPU prices fluctuate over time—affected by hardware releases, mining booms,
 Throughout this journey, we made documentation to go further in detail of the process of creating OracleGPU. You can find this here -> https://docs.google.com/document/d/14SOWcOzCcc5ZYIKYrKVYrhSmEw9-TIirW8DFNet-h1w/edit?usp=sharing
 
 
-![screenshot](Screenshot 2025-06-05 142011.png)
+![screenshot](Document.png)
 
 
 ## Model Performance
@@ -33,7 +33,7 @@ The model reaches a training loss (MSE) of approximately **0.014** after just 10
 ## UI Preview
 
 
-![screenshot](Screenshot 2025-06-05 140150.png)
+![screenshot](Graph.png)
 
 ---
 
