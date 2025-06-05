@@ -57,5 +57,8 @@ cd oracle-gpu-price-predictor
 # Install dependencies
 pip install -r requirements.txt
 
+# Training mode
+
+Go into training_process class and change training to true if you want to train the bot, turn it to false to turn training off. You can change the data in training.py with the data_path as well. 
 # Run the GUI
 python app.py
